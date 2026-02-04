@@ -8,44 +8,46 @@ import SwiftUI
 struct WindowThumbnailView: View {
     let windowInfo: WindowInfo
     let isSelected: Bool
+    let thumbnailSize: CGSize
     let onTap: () -> Void
-
-    private let maxThumbnailWidth: CGFloat = 200
-    private let maxThumbnailHeight: CGFloat = 150
 
     var body: some View {
         VStack(spacing: 8) {
             thumbnailImage
-                .frame(width: maxThumbnailWidth, height: maxThumbnailHeight)
+                .frame(width: thumbnailSize.width, height: thumbnailSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
+                        .stroke(isSelected ? Color.accentColor : Color.white.opacity(0.3), lineWidth: isSelected ? 3 : 1)
                 )
-                .shadow(color: isSelected ? Color.accentColor.opacity(0.5) : Color.black.opacity(0.3),
-                        radius: isSelected ? 10 : 5)
+                .shadow(color: Color.black.opacity(0.5), radius: 8)
                 .scaleEffect(isSelected ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 0.15), value: isSelected)
 
             HStack(spacing: 6) {
                 if let icon = windowInfo.appIcon {
                     Image(nsImage: icon)
                         .resizable()
-                        .frame(width: 16, height: 16)
+                        .frame(width: 20, height: 20)
                 }
 
                 Text(windowInfo.displayTitle)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .foregroundColor(.white)
+                    .shadow(color: .black, radius: 2)
             }
-            .frame(maxWidth: maxThumbnailWidth)
+            .frame(maxWidth: thumbnailSize.width)
         }
-        .padding(8)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? Color.white.opacity(0.15) : Color.clear)
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.3), radius: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
         .contentShape(Rectangle())
         .onTapGesture {

@@ -128,19 +128,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
     }
 
-    private var isSwitcherShowing = false
+    private var isSwitcherActive = false
+    private var isSwitcherUIVisible = false
+    private var showUITask: Task<Void, Never>?
+    private let showUIDelay: UInt64 = 100_000_000 // 100ms in nanoseconds
 
     @MainActor
     private func showSwitcher() {
         // Prevent re-entry
-        guard !isSwitcherShowing else {
+        guard !isSwitcherActive else {
             print("AppDelegate: showSwitcher already in progress, skipping")
             return
         }
-        isSwitcherShowing = true
+        isSwitcherActive = true
+        isSwitcherUIVisible = false
 
         print("AppDelegate: showSwitcher called")
-        selectedIndex = 0
+        // Start at index 1 (second window) since index 0 is the current window
+        selectedIndex = 1
 
         // Get window list synchronously (fast with CGWindowList)
         print("AppDelegate: Starting window refresh...")
@@ -150,11 +155,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if windowManager.windows.isEmpty {
             print("AppDelegate: No windows found, dismissing")
             hotkeyManager.setSwitcherActive(false)
-            isSwitcherShowing = false
+            isSwitcherActive = false
             return
         }
 
-        // Show window immediately with placeholder thumbnails
+        // Adjust selectedIndex if there's only one window
+        if windowManager.windows.count == 1 {
+            selectedIndex = 0
+        }
+
+        // Delay showing UI by 200ms - quick Cmd+Tab won't show UI
+        showUITask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: showUIDelay)
+
+            // Check if still active (user hasn't released Cmd)
+            guard isSwitcherActive else { return }
+
+            showSwitcherUI()
+        }
+    }
+
+    @MainActor
+    private func showSwitcherUI() {
+        guard isSwitcherActive, !isSwitcherUIVisible else { return }
+        isSwitcherUIVisible = true
+
         print("AppDelegate: Creating and showing switcher window...")
         createSwitcherWindow()
         switcherWindow?.orderFrontRegardless()
@@ -230,7 +255,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             selectedIndex = (selectedIndex + 1) % windowManager.windows.count
         }
 
-        updateSwitcherView()
+        // If user presses Tab again, show UI immediately
+        if !isSwitcherUIVisible {
+            showUITask?.cancel()
+            showSwitcherUI()
+        } else {
+            updateSwitcherView()
+        }
     }
 
     @MainActor
@@ -254,9 +285,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func dismissSwitcher() {
-        switcherWindow?.orderOut(nil)
+        showUITask?.cancel()
+        showUITask = nil
+        if isSwitcherUIVisible {
+            switcherWindow?.orderOut(nil)
+        }
         hotkeyManager.setSwitcherActive(false)
-        isSwitcherShowing = false
+        isSwitcherActive = false
+        isSwitcherUIVisible = false
     }
 
     @objc private func showPreferences() {

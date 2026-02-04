@@ -131,7 +131,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var isSwitcherActive = false
     private var isSwitcherUIVisible = false
     private var showUITask: Task<Void, Never>?
-    private let showUIDelay: UInt64 = 100_000_000 // 100ms in nanoseconds
+    private let showUIDelay: UInt64 = 80_000_000 // 80ms in nanoseconds
 
     @MainActor
     private func showSwitcher() {
@@ -164,9 +164,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             selectedIndex = 0
         }
 
-        // Delay showing UI by 200ms - quick Cmd+Tab won't show UI
+        // Start thumbnail capture and delay in parallel, wait for BOTH before showing UI
         showUITask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: showUIDelay)
+            // Run both in parallel
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    await self.windowManager.captureThumbnails()
+                }
+                group.addTask {
+                    try? await Task.sleep(nanoseconds: self.showUIDelay)
+                }
+                // Wait for both to complete
+                await group.waitForAll()
+            }
 
             // Check if still active (user hasn't released Cmd)
             guard isSwitcherActive else { return }
@@ -180,17 +190,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard isSwitcherActive, !isSwitcherUIVisible else { return }
         isSwitcherUIVisible = true
 
-        print("AppDelegate: Creating and showing switcher window...")
         createSwitcherWindow()
         switcherWindow?.orderFrontRegardless()
-
-        // Capture thumbnails in background
-        Task {
-            print("AppDelegate: Starting thumbnail capture...")
-            await windowManager.captureThumbnails()
-            updateSwitcherView()
-            print("AppDelegate: Thumbnail capture complete")
-        }
     }
 
     @MainActor

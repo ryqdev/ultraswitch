@@ -103,16 +103,19 @@ final class WindowManager: ObservableObject {
         print("WindowManager: Starting thumbnail capture for \(windows.count) windows...")
         let startTime = CFAbsoluteTimeGetCurrent()
 
-        // Fetch SCShareableContent ONCE (this is the slow part)
-        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false) else {
+        // Get shareable content
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) else {
             print("WindowManager: Failed to get shareable content")
             return
         }
+
+        print("WindowManager: SCShareableContent has \(content.windows.count) windows")
 
         // Build a lookup map
         let scWindowMap = Dictionary(uniqueKeysWithValues: content.windows.map { ($0.windowID, $0) })
 
         // Capture thumbnails in parallel
+        var capturedCount = 0
         await withTaskGroup(of: (Int, NSImage?).self) { group in
             for (index, windowInfo) in windows.enumerated() {
                 if let scWindow = scWindowMap[windowInfo.id] {
@@ -127,21 +130,22 @@ final class WindowManager: ObservableObject {
             for await (index, thumbnail) in group {
                 if let thumbnail = thumbnail, index < updatedWindows.count {
                     updatedWindows[index].thumbnail = thumbnail
+                    capturedCount += 1
                 }
             }
             self.windows = updatedWindows
         }
 
         let elapsed = CFAbsoluteTimeGetCurrent() - startTime
-        print("WindowManager: Captured thumbnails in \(String(format: "%.3f", elapsed))s")
+        print("WindowManager: Captured \(capturedCount) thumbnails in \(String(format: "%.3f", elapsed))s")
     }
 
     private func captureThumbnail(for scWindow: SCWindow) async -> NSImage? {
         do {
             let filter = SCContentFilter(desktopIndependentWindow: scWindow)
             let config = SCStreamConfiguration()
-            config.width = 400
-            config.height = 300
+            config.width = 300
+            config.height = 200
             config.scalesToFit = true
             config.showsCursor = false
 

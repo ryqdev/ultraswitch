@@ -77,6 +77,9 @@ final class WindowManager: ObservableObject {
 
             let title = windowDict[kCGWindowName as String] as? String ?? ""
 
+            // Skip narrow untitled windows (sidebars, panels like Brave's vertical tabs)
+            if title.isEmpty && bounds.width < 300 { continue }
+
             let windowInfo = WindowInfo(
                 id: windowID,
                 ownerPID: ownerPID,

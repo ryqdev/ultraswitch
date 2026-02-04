@@ -44,12 +44,9 @@ final class PermissionManager: ObservableObject {
     }
 
     func checkScreenRecordingPermissionAsync() async -> Bool {
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-            return !content.windows.isEmpty
-        } catch {
-            return false
-        }
+        // Use CGPreflightScreenCaptureAccess for reliable permission check
+        // This API directly checks permission state without relying on window availability
+        return CGPreflightScreenCaptureAccess()
     }
 
     func requestAccessibilityPermission() {

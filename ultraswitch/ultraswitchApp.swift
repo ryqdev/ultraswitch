@@ -118,7 +118,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in
                 guard let self = self else { return }
                 Task { @MainActor in
-                    if self.permissionManager.hasAllPermissions {
+                    // Only need Accessibility permission for hotkey to work
+                    if self.permissionManager.hasAccessibilityPermission {
                         self.permissionManager.stopPermissionMonitoring()
                         self.startHotkeyManager()
                         self.cancellables.removeAll()

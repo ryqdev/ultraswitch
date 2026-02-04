@@ -191,7 +191,8 @@ final class WindowManager: ObservableObject {
             }
         }
 
-        return windows.first
+        // Don't return a random window if no match found
+        return nil
     }
 
     func activateWindow(_ windowInfo: WindowInfo) {
@@ -202,7 +203,7 @@ final class WindowManager: ObservableObject {
         }
 
         if let app = NSRunningApplication(processIdentifier: windowInfo.ownerPID) {
-            app.activate()
+            app.activate(options: .activateIgnoringOtherApps)
         }
     }
 }

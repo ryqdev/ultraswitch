@@ -16,10 +16,6 @@ struct WindowThumbnailView: View {
             thumbnailImage
                 .frame(width: thumbnailSize.width, height: thumbnailSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.white.opacity(0.3), lineWidth: isSelected ? 3 : 1)
-                )
                 .shadow(color: Color.black.opacity(0.5), radius: 8)
                 .scaleEffect(isSelected ? 1.05 : 1.0)
 

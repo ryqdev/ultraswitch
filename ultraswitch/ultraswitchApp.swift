@@ -136,10 +136,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func showSwitcher() {
-        // Prevent re-entry
-        guard !isSwitcherActive else {
-            print("AppDelegate: showSwitcher already in progress, skipping")
-            return
+        // If already active, cancel previous session and restart
+        if isSwitcherActive {
+            showUITask?.cancel()
+            showUITask = nil
+            if isSwitcherUIVisible {
+                switcherWindow?.orderOut(nil)
+            }
         }
         isSwitcherActive = true
         isSwitcherUIVisible = false
@@ -155,7 +158,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if windowManager.windows.isEmpty {
             print("AppDelegate: No windows found, dismissing")
-            hotkeyManager.setSwitcherActive(false)
             isSwitcherActive = false
             return
         }
@@ -268,6 +270,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func activateAndDismiss() {
+        guard isSwitcherActive else { return }
         guard !windowManager.windows.isEmpty,
               selectedIndex >= 0,
               selectedIndex < windowManager.windows.count else {
@@ -292,7 +295,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if isSwitcherUIVisible {
             switcherWindow?.orderOut(nil)
         }
-        hotkeyManager.setSwitcherActive(false)
         isSwitcherActive = false
         isSwitcherUIVisible = false
     }

@@ -48,10 +48,15 @@ final class WindowManager: ObservableObject {
             return
         }
 
-        var windowInfos: [WindowInfo] = []
-
-        // Group windows by ownerPID to detect duplicates from same app
-        var windowsByPID: [pid_t: [(windowDict: [String: Any], bounds: CGRect, title: String)]] = [:]
+        // First pass: collect valid windows in z-order (CGWindowList returns front-to-back)
+        struct CandidateWindow {
+            let windowID: CGWindowID
+            let ownerPID: pid_t
+            let ownerName: String
+            let title: String
+            let bounds: CGRect
+        }
+        var candidates: [CandidateWindow] = []
 
         for windowDict in windowList {
             guard let windowID = windowDict[kCGWindowNumber as String] as? CGWindowID,
@@ -88,85 +93,57 @@ final class WindowManager: ObservableObject {
                 continue
             }
 
-            // Group by PID for duplicate detection
-            if windowsByPID[ownerPID] == nil {
-                windowsByPID[ownerPID] = []
-            }
-            windowsByPID[ownerPID]?.append((windowDict: windowDict, bounds: bounds, title: title))
+            candidates.append(CandidateWindow(
+                windowID: windowID, ownerPID: ownerPID, ownerName: ownerName,
+                title: title, bounds: bounds
+            ))
         }
 
-        // Process windows and filter duplicates
-        for (ownerPID, windows) in windowsByPID {
-            // If multiple windows from same app, filter out potential popups/search boxes
-            if windows.count > 1 {
-                // Sort by area (largest first) - main window is usually largest
-                let sorted = windows.sorted { w1, w2 in
-                    let area1 = w1.bounds.width * w1.bounds.height
-                    let area2 = w2.bounds.width * w2.bounds.height
-                    return area1 > area2
-                }
+        // Group by PID to detect duplicate/popup windows within the same app
+        var rejectedIDs = Set<CGWindowID>()
+        let candidatesByPID = Dictionary(grouping: candidates) { $0.ownerPID }
 
-                // Keep windows that are significantly different in size or position
-                var keptWindows: [(windowDict: [String: Any], bounds: CGRect, title: String)] = []
-                for window in sorted {
-                    var shouldKeep = true
-
-                    // Check if this window is much smaller and overlapping with a kept window
-                    // (likely a popup/search box)
-                    for kept in keptWindows {
-                        let keptArea = kept.bounds.width * kept.bounds.height
-                        let currentArea = window.bounds.width * window.bounds.height
-
-                        // If this window is <50% of the size and overlaps, skip it
-                        if currentArea < keptArea * 0.5 && window.bounds.intersects(kept.bounds) {
-                            shouldKeep = false
-                            break
-                        }
-                    }
-
-                    if shouldKeep {
-                        keptWindows.append(window)
-                    }
-                }
-
-                // Add kept windows to final list
-                for window in keptWindows {
-                    let windowDict = window.windowDict
-                    guard let windowID = windowDict[kCGWindowNumber as String] as? CGWindowID,
-                          let ownerName = windowDict[kCGWindowOwnerName as String] as? String else {
-                        continue
-                    }
-
-                    let windowInfo = WindowInfo(
-                        id: windowID,
-                        ownerPID: ownerPID,
-                        ownerName: ownerName,
-                        windowTitle: window.title,
-                        bounds: window.bounds,
-                        thumbnail: nil,
-                        axWindow: nil
-                    )
-                    windowInfos.append(windowInfo)
-                }
-            } else if let window = windows.first {
-                // Single window from this app, add it directly
-                let windowDict = window.windowDict
-                guard let windowID = windowDict[kCGWindowNumber as String] as? CGWindowID,
-                      let ownerName = windowDict[kCGWindowOwnerName as String] as? String else {
-                    continue
-                }
-
-                let windowInfo = WindowInfo(
-                    id: windowID,
-                    ownerPID: ownerPID,
-                    ownerName: ownerName,
-                    windowTitle: window.title,
-                    bounds: window.bounds,
-                    thumbnail: nil,
-                    axWindow: nil
-                )
-                windowInfos.append(windowInfo)
+        for (_, group) in candidatesByPID where group.count > 1 {
+            // Sort by area (largest first) for overlap comparison
+            let sorted = group.sorted {
+                ($0.bounds.width * $0.bounds.height) > ($1.bounds.width * $1.bounds.height)
             }
+
+            var keptBounds: [CGRect] = []
+            for window in sorted {
+                let currentArea = window.bounds.width * window.bounds.height
+                var isPopup = false
+
+                for kept in keptBounds {
+                    let keptArea = kept.width * kept.height
+                    if currentArea < keptArea * 0.5 && window.bounds.intersects(kept) {
+                        isPopup = true
+                        break
+                    }
+                }
+
+                if isPopup {
+                    rejectedIDs.insert(window.windowID)
+                } else {
+                    keptBounds.append(window.bounds)
+                }
+            }
+        }
+
+        // Build final list in original z-order, skipping rejected windows
+        var windowInfos: [WindowInfo] = []
+        for candidate in candidates {
+            if rejectedIDs.contains(candidate.windowID) { continue }
+
+            windowInfos.append(WindowInfo(
+                id: candidate.windowID,
+                ownerPID: candidate.ownerPID,
+                ownerName: candidate.ownerName,
+                windowTitle: candidate.title,
+                bounds: candidate.bounds,
+                thumbnail: nil,
+                axWindow: nil
+            ))
         }
 
         self.windows = windowInfos

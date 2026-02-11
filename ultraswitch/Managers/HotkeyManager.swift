@@ -81,10 +81,6 @@ final class HotkeyManager {
         isSwitcherActive = false
     }
 
-    func setSwitcherActive(_ active: Bool) {
-        isSwitcherActive = active
-    }
-
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if let eventTap = eventTap {

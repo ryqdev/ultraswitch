@@ -1,23 +1,44 @@
 # UltraSwitch
 
-A window switcher for macOS.
+A macOS window switcher built with Swift and SwiftUI.
 
-## Installation
+## Requirements
 
-1. Download the latest DMG from [Releases](https://github.com/ryqdev/ultraswitch/releases)
-2. Open the DMG and drag `ultraswitch.app` to **Applications**
-3. Run this command in Terminal to allow the app to open:
-   ```bash
-   xattr -cr /Applications/ultraswitch.app
-   ```
-4. Open the app and grant the required permissions:
-   - **Accessibility** - for intercepting Cmd+Tab
-   - **Screen Recording** - for capturing window thumbnails
+- macOS 14.0 (Sonoma) or later
+- Swift 5.9+
 
-## Usage
+## Build and Run
 
-Press `Cmd + Tab` to switch between windows.
+### Using Swift Package Manager
 
-## License
+Build:
 
-MIT
+```bash
+swift build
+```
+
+Run:
+
+```bash
+swift run UltraSwitch
+```
+
+Build for release:
+
+```bash
+swift build -c release
+```
+
+### Generate DMG
+
+To create a `.dmg` installer for distribution:
+
+```bash
+bash scripts/build-dmg.sh
+```
+
+This builds the release binary, packages it into a `.app` bundle, and outputs `UltraSwitch.dmg` in the project root.
+
+### Permissions
+
+UltraSwitch requires **Accessibility** and **Screen Recording** permissions to function. The app will prompt you to grant these on first launch.

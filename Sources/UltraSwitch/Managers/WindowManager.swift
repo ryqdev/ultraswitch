@@ -23,7 +23,8 @@ final class WindowManager: ObservableObject {
         "SystemUIServer",
         "Spotlight",
         "loginwindow",
-        "ultraswitch"
+        "ultraswitch",
+        "UltraSwitch"
     ]
 
     private let minimumWindowSize: CGFloat = 50

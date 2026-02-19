@@ -99,7 +99,3 @@ struct PermissionRow: View {
         }
     }
 }
-
-#Preview {
-    PermissionRequestView()
-}

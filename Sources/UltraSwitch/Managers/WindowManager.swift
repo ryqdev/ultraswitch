@@ -8,6 +8,10 @@ import ApplicationServices
 import Combine
 import ScreenCaptureKit
 
+// Private API to get CGWindowID from AXUIElement - widely used by macOS window managers
+@_silgen_name("_AXUIElementGetWindow")
+func _AXUIElementGetWindow(_ element: AXUIElement, _ windowID: UnsafeMutablePointer<CGWindowID>) -> AXError
+
 @MainActor
 final class WindowManager: ObservableObject {
     static let shared = WindowManager()
@@ -223,6 +227,16 @@ final class WindowManager: ObservableObject {
             return nil
         }
 
+        // Primary: match by CGWindowID (reliable even when multiple windows have same bounds)
+        for window in windows {
+            var axWindowID: CGWindowID = 0
+            let err = _AXUIElementGetWindow(window, &axWindowID)
+            if err == .success && axWindowID == windowID {
+                return window
+            }
+        }
+
+        // Fallback: match by bounds (in case the private API fails)
         for window in windows {
             var positionRef: CFTypeRef?
             var sizeRef: CFTypeRef?
@@ -248,7 +262,6 @@ final class WindowManager: ObservableObject {
             }
         }
 
-        // Don't return a random window if no match found
         return nil
     }
 

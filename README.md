@@ -30,8 +30,6 @@ To create a `.dmg` installer for distribution:
 bash scripts/build-dmg.sh
 ```
 
-This builds the release binary, packages it into a `.app` bundle, and outputs `UltraSwitch.dmg` in the project root.
-
 ### Permissions
 
 UltraSwitch requires **Accessibility** and **Screen Recording** permissions to function. The app will prompt you to grant these on first launch.

@@ -2,11 +2,6 @@
 
 A macOS window switcher built with Swift and SwiftUI.
 
-## Requirements
-
-- macOS 14.0 (Sonoma) or later
-- Swift 5.9+
-
 ## Build and Run
 
 ### Using Swift Package Manager

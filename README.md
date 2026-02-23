@@ -1,7 +1,5 @@
 # UltraSwitch
 
-A macOS window switcher built with Swift and SwiftUI.
-
 ## Build and Run
 
 ### Using Swift Package Manager

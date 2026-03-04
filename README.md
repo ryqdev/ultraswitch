@@ -33,3 +33,10 @@ bash scripts/build-dmg.sh
 ### Permissions
 
 UltraSwitch requires **Accessibility** and **Screen Recording** permissions to function. The app will prompt you to grant these on first launch.
+
+
+### Fail to open?
+
+```shell
+xattr -cr /Applications/ultraswitch.app
+```

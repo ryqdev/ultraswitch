@@ -38,5 +38,5 @@ UltraSwitch requires **Accessibility** and **Screen Recording** permissions to f
 ### Fail to open?
 
 ```shell
-xattr -cr /Applications/ultraswitch.app
+xattr -cr /Applications/UltraSwitch.app
 ```

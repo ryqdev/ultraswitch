@@ -1,5 +1,7 @@
 # UltraSwitch
 
+A macOS window switcher that replaces the default Cmd+Tab with a full-window picker showing live thumbnails of every open window across your apps.
+
 ## Build and Run
 
 ### Using Swift Package Manager

@@ -64,6 +64,13 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
+echo "==> Code signing (ad-hoc)..."
+# Must sign AFTER all bundle contents (binary, Info.plist, icon) are in place,
+# otherwise the signature is invalidated. Ad-hoc (-s -) needs no Apple account
+# and prevents the "is damaged and can't be opened" Gatekeeper error.
+codesign --force --deep --options runtime -s - "$APP_BUNDLE"
+codesign --verify --verbose "$APP_BUNDLE"
+
 echo "==> Creating .dmg..."
 rm -rf "$DMG_STAGING" "$DMG_PATH"
 mkdir -p "$DMG_STAGING"
@@ -79,3 +86,7 @@ rm -rf "$DMG_STAGING" "$APP_BUNDLE"
 
 echo ""
 echo "Done! DMG created at: $DMG_PATH"
+echo ""
+echo "NOTE: This build is ad-hoc signed (not notarized). After dragging the app"
+echo "to /Applications, users must clear the quarantine flag once:"
+echo "    xattr -cr /Applications/$APP_NAME.app"
